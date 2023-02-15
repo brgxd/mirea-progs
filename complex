@@ -1,0 +1,141 @@
+#include <iostream>
+#include <math.h>
+
+using namespace std;
+
+class Complex
+{
+private:
+	double real;
+	double image;
+public:
+	//конструктор Complex z;
+	Complex() {real = 0; image = 0;}
+	Complex(double r,double im) {real = r; image = im;}
+	Complex(double r) {real = r; image = 0;}
+
+	void print()
+	{
+		if (image == 0)
+		{
+			cout << "\n" << real << "\n";
+			return;
+		}
+		if (real == 0)
+		{
+			cout << "\n" << image << "i\n";
+			return;
+		}
+		if (image > 0)
+			cout << "\n" << real << " + " << image << "i\n";
+		else
+			cout << "\n" << real << " - " << -image << "i\n";
+	}
+
+	double getReal() {return real;}
+	double getImage() {return image;}
+
+	void SetReal(double value) { real = value; }
+	void SetImage(double value) { image = value; }
+
+	double Module() {return sqrt(real*real + image*image);}
+
+	Complex operator+(Complex z)
+	{
+		Complex res;
+		res.real = real + z.real;
+		res.image = image + z.image;
+		return res;
+	}
+
+	Complex operator+(double d)
+	{
+		Complex res;
+		res.real = real + d;
+		res.image = image;
+		return res;
+	}
+	
+	Complex operator+()
+	{
+		Complex res;
+		res.real = real;
+		res.image = -image;
+		return res;
+	}
+	
+	/*Complex operator+(double d, Complex z)
+	{
+	    Complex res;
+	    res.SetReal(z.getReal() + d);
+	    res.SetImage(z.getImage());
+	    return res;
+	}
+	
+	Complex operator+(doble d, Complex z)
+	{
+	    Complex res(z.getReal()+d,z.getImage);
+	    return res;
+	}*/
+	
+	friend Complex operator+(double d, Complex z)
+	
+	Complex operator+(double d, Complex z)
+	{
+	    Complex res;
+	    res.real = z.real + d;
+	    res.image = z.image;
+	    return res;
+	}
+	
+	Complex operator-()
+	{
+		Complex res;
+		res.real = -real;
+		res.image = -image;
+		return res;
+	}
+	
+	bool operator==(Complex z)
+	{
+	    return(z.real == real && z.image == image);
+	}
+	
+	bool operator!=(Complex z)
+	{
+	    return(z.real != real || z.image != image);
+	}
+	
+	Complex operator=(Complex z)
+	{
+	    real = z.real;
+	    image = z.image;
+	    return *this;
+	}
+	
+	Complex operator++(int notused)
+	{
+	    real++;
+	    return *this;
+	}
+	
+	Complex operator++()
+	{
+	    real++;
+	    image++;
+	    return *this;
+	}
+};
+
+int main()
+{
+	Complex z(1, -1);
+	Complex w(2, -3);
+	Complex u; u = w = z;
+	z++;
+	z.print();
+	//bool b = (u != z);
+	//cout <<"\n" << b << "\n";
+	char c; cin>>c;
+	return 0;
+}
