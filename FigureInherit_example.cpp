@@ -1,6 +1,7 @@
 ﻿// FigureInherit.cpp: определяет точку входа для консольного приложения.
 //
 
+#include "stdafx.h"
 #include <math.h>
 #include <iostream>
 #include <fstream>
