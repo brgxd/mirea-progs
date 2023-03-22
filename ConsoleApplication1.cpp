@@ -1,164 +1,141 @@
-﻿// FigureInherit.cpp: определяет точку входа для консольного приложения.
-//
+﻿
 
-#include <math.h>
 #include <iostream>
-#include <fstream>
 
 using namespace std;
 
-class Figure
+class BaseString
 {
 protected:
-	double dim1, dim2, dim3;
+	char* p;
+	int len;
+	int capacity;
 public:
-	virtual double Area() = 0;
-	virtual void print() { cout << "\nFigure class"; }
-	double Dim1() { return dim1; }
-	double Dim2() { return dim2; }
-	double Dim3() { return dim3; }
-	Figure(double d1) { dim1 = d1; dim2 = 0; dim3 = 0; cout << "\nBase Constructor 1"; }
-	Figure(double d1, double d2) { dim1 = d1; dim2 = d2; dim3 = 0; cout << "\nBase Constructor 2"; }
-	Figure(double d1, double d2, double d3) { dim1 = d1; dim2 = d2; dim3 = d3; cout << "\nBase Constructor 3"; }
-};
-
-class Triangle : public Figure
-{
-public:
-	Triangle(double d1, double d2, double d3) : Figure(d1, d2, d3) { cout << "\nTriangle Constructor"; }
-	virtual double Area()
+	BaseString(char* ptr)
 	{
-		cout << "\nTriangle Area\n";
-		double p = dim1 + dim2 + dim3; p /= 2;
-		return sqrt(p * (p - dim1) * (p - dim2) * (p - dim3));
+		cout << "\nBase Constructor 1\n";
+		int i = 0;
+		for (; ptr[i] != '\0'; i++);
+		len = i;
+
+		capacity = (len > 256) ? len + 1 : 256;
+		p = new char[capacity];
+
+		for (i = 0; ptr[i] != '\0';p[i] = ptr[i], i++);
+		p[len] = '\0';
 	}
-	virtual void print() { cout << "\nTriangle class"; }
-};
 
-class Rectangle : public Figure
-{
-public:
-	Rectangle(double d1, double d2) : Figure(d1, d2) { cout << "\nRectangle Constructor"; }
-	virtual double Area()
+	BaseString(const char* ptr)
 	{
-		cout << "\nRectangle Area\n";
-		return dim1 * dim2;
+		cout << "\nBase Constructor 1\n";
+		int i = 0;
+		for (; ptr[i] != '\0'; i++);
+		len = i;
+
+		capacity = (len > 256) ? len + 1 : 256;
+		p = new char[capacity];
+
+		for (i = 0; ptr[i] != '\0'; p[i] = ptr[i], i++);
+		p[len] = '\0';
 	}
-	virtual void print() { cout << "\nRectangle class"; }
-};
 
-class Square1 : public Figure
-{
-public:
-	Square1(double d1) : Figure(d1) { cout << "\nSquare1 Constructor"; }
-	virtual double Area()
+	BaseString(int Capacity = 256)
 	{
-		cout << "\nSquare1 Area\n";
-		return sqrt(dim1 * dim1);
+		cout << "\nBase Constructor 0\n";
+		capacity = Capacity;
+		p = new char[capacity];
+		len = 0;
 	}
-};
 
-class Square2 : public Rectangle
-{
-public:
-	Square2(double d1) : Rectangle(d1, d1) { cout << "\nSquare2 Constructor"; }
-	virtual void print() { cout << "\nSquare class"; }
-	void test() { cout << "\nNew function"; }
-};
-
-
-double f(double x)
-{
-	return sin(x);
-}
-
-double g(double x, double y)
-{
-	return x * x + y * y;
-}
-
-double Integral(double (*p)(double), double left, double right, double step = 0.001)
-{
-	double s = 0;
-	double x = left;
-	while (x < right)
+	~BaseString()
 	{
-		s += p(x) * step;
-		x += step;
+		cout << "\nBase Destructor\n";
+		if (p != NULL)
+			delete[] p;
+		len = 0;
+		p = NULL;
+		capacity = 0;
 	}
-	return s;
-}
 
-double Integral(double (*p)(double, double), double x_left, double x_right, double y_left, double y_right, double step = 0.001)
-{
-	double v = 0;
-	double x = x_left;
-	double y = y_left;
-	while (x < x_right)
+	int Length() { return len; }
+	int Capacity() { return capacity; }
+	//char* get() {return p;}
+	char& operator[](int i) { return p[i]; }
+
+
+	BaseString& operator=(BaseString& s)
 	{
-		while (y < y_right)
+		cout << "\nBase Operator = \n";
+
+		return *this;
+	}
+
+	BaseString(BaseString& s)
+	{
+		cout << "\nBase Copy Constructor\n";
+		capacity = s.capacity;
+		len = s.len;
+		p = new char[s.capacity];
+		for (int i = 0; i <= len; p[i] = s.p[i], i++);
+	}
+
+	virtual void print()
+	{
+		int i = 0;
+		while (p[i] != '\0')
 		{
-			v += p(x, y) * step * step;
-			y += step;
+			cout << p[i];
+			i++;
 		}
-		y = y_left;
-		x += step;
 	}
-	return v;
-}
 
-double p(double x)
-{
-	return cos(x) - 0.5;
-}
-
-
-double Dichotomy(double left, double right, double eps = 0.00001)
-{
-	double l = left;
-	double r = right;
-	double middle = (l + r) / 2;
-	while (abs(p(middle)) > eps)
+	virtual int IndexOf(char c, int start = 0)
 	{
-		if (p(l) * p(middle) < 0)
+		if (start > len || len == 0) return -1;
+		for (int i = start; p[i] != '\0'; i++)
 		{
-			r = middle;
+			if (p[i] == c)return i;
 		}
-		else
-		{
-			l = middle;
-		}
-		middle = (l + r) / 2;
+		return -1;
 	}
-	return middle;
-}
 
+};
+
+class String : public BaseString
+{
+public:
+	String(const char* str) : BaseString(str) {}
+	~String() {}
+
+	virtual int IndexOf(char c, int start = 0)
+	{
+		if (start == 0) start = len - 1;
+		if (len == 0 || start >= len)return -1;
+		for (int i = start; i > -1; i--)
+			if (p[i] == c)return i;
+		return -1;
+	}
+};
 
 
 int main()
 {
-	double (*p)(double, double); p = g;
-	double s = Dichotomy(-1, 10);
-	cout << "\nDichotomy: " << s;
-	/*Triangle T(3, 4, 5);
-	cout << "\nTriangle area: " << T.Area();
-	cout << "\nVariable T of class: "; T.print();
-	cout << "\nSides: " << T.Dim1() << ", " << T.Dim2() << ", " << T.Dim3();
-	Square2 Q(5);
-	cout << "\nArea of square:" << Q.Area();
-	Q.test();
-
-	cout << "\nBase pointer:\n";
-	Square2 S2(2);
-	Square1 S1(3);
-	Rectangle R(4, 3);
-	Triangle T(5, 4, 3);
-	Figure* ptr;
-	ptr = &S2; cout << ptr->Area();
-	ptr = &S1; cout << ptr->Area();
-	ptr = &R; cout << ptr->Area();
-	ptr = &T; cout << ptr->Area();
-
+	if (true)
+	{
+		BaseString s("test");
+		s.print();
+		cout << "\n" << s.IndexOf('e');
+		BaseString s1 = s;
+		cout << "\n" << s1.IndexOf('t');
+		/* BaseString s1 = s;
+		s1.print();
+		BaseString s2;
+		s2 = s;
+		s2 = s + s1;
+		s2.print();
+		s1 = s2 + s;
+		s1.print();*/
+	}
 	char c; cin >> c;
-	return 0;*/
+	return 0;
 }
