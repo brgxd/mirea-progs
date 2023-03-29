@@ -281,6 +281,8 @@ public:
 
 		int IndexOf(double value, bool bFindFromStart = true)
 		{
+			if(bFindFromStart == false)
+				return count - BinSearch(value, 0 ,count - 1);
 			return BinSearch(value, 0, count - 1);
 		}
 
