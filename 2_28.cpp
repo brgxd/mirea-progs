@@ -252,7 +252,7 @@ public:
 
 	bool operator<(MySortedArray a)
 	{
-		return ptr[count-1] < a.ptr[a.count-1] ? true : false;
+		return max() < a.ptr[a.count-1] ? true : false;
 	}
 
 	int IndexOf(double value, bool bFindFromStart = true)
