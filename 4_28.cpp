@@ -147,7 +147,7 @@ public:
 		return true;
 	}
 
-	bool aaa()
+	bool BracketsCheck()
 	{
 		char* p1 = p;
 		int n = 0;
@@ -183,5 +183,5 @@ int main()
 	s1.print();
 	cout << "\n" << s3.IndexOf('3', 0);
 	String s("(abcd)");
-	cout << "\n" << s.aaa();
+	cout << "\n" << s.BracketsCheck();
 }
