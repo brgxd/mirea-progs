@@ -2,18 +2,22 @@
 
 #include <iostream>
 
+template<class T> class LinkedList;
+template<class T> class DoubleSideStack;
+template<class T> class Stack;
+
 template<class T>
 class Element
 {
-	//protected:
-public:
-	//переместить в protected
+protected:
 	Element* next;
 	Element* prev;
 	T info;
-
-
-
+public:
+	friend class LinkedList<T>;
+	friend class DoubleSideStack<T>;
+	friend class Stack<T>;
+	
 	Element(T data)
 	{
 		next = prev = NULL;
