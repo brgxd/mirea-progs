@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-
+#include <typeinfo>
 
 using namespace std;
 
@@ -29,21 +29,6 @@ public:
 	virtual void print()
 	{
 		cout << "Exception: " << str << "; " << what();
-	}
-};
-
-class InvalidSizeException : public Exception
-{
-protected:
-	int w, h;
-public:
-	InvalidSizeException(const char* s, int Width, int Height) : Exception(s) { w = Width; h = Height; }
-	InvalidSizeException(const InvalidSizeException& e) : Exception(e) { w = e.w; h = e.h; }
-
-	//функцию вывода можно будет переопределить в производных классах, когда будет ясна конкретика
-	virtual void print()
-	{
-		cout << "InvalidSizeException: " << str << "; columns: " << w << "\t" << "rows: " << h << "; " << what();
 	}
 };
 
@@ -104,10 +89,22 @@ public:
 	}
 };
 
+class InvalidVarFunctionException : public InvalidOperationException
+{
+public:
+	InvalidVarFunctionException(const char* s, int Row, int Column) : InvalidOperationException(s, Row,Column) {}
+	InvalidVarFunctionException(const InvalidOperationException& e) : InvalidOperationException(e) {}
+	virtual void print()
+	{
+		cout << "InvalidVarFunctionException" << str << "; row: " << row << "\t" << "column: " << col << "; " << what();
+	}
+};
+
+template <class T = double>
 class BaseMatrix
 {
 protected:
-	double** ptr;
+	T** ptr;
 	int height;
 	int width;
 public:
@@ -121,9 +118,9 @@ public:
 		//конструктор
 		height = Height;
 		width = Width;
-		ptr = new double* [height];
+		ptr = new T* [height];
 		for (int i = 0; i < height; i++)
-			ptr[i] = new double[width];
+			ptr[i] = new T[width];
 	}
 
 	BaseMatrix(const BaseMatrix& M)
@@ -132,24 +129,24 @@ public:
 		cout << "\nBaseMatrix copy constructor";
 		height = M.height;
 		width = M.width;
-		ptr = new double* [height];
+		ptr = new T* [height];
 		for (int i = 0; i < height; i++)
 		{
-			ptr[i] = new double[width];
+			ptr[i] = new T[width];
 			for (int j = 0; j < width; j++)
 				ptr[i][j] = M.ptr[i][j];
 		}
 	}
 
-	BaseMatrix(double** arr, int w, int h)
+	BaseMatrix(T** arr, int w, int h)
 	{
 		cout << "\nBaseMatrix constructor double**";
 		height = h;
 		width = w;
-		ptr = new double* [height];
+		ptr = new T* [height];
 		for (int i = 0; i < height; i++)
 		{
-			ptr[i] = new double[width];
+			ptr[i] = new T[width];
 			for (int j = 0; j < width; j++)
 				ptr[i][j] = arr[i][j];
 		}
@@ -178,24 +175,27 @@ public:
 		}
 	}
 
-	double* operator[](int row)
+	T* operator[](int row)
 	{
 		if (row < 0 || row >= height)
 			throw IndexOutOfBoundsException("Index out of bounds in operator[]", row, -1);
 		return ptr[row];
 	}
 
-	double& operator()(int row, int column)
+	T& operator()(int row, int column)
 	{
 		if (row < 0 || row >= height || column < 0 || column >= width)
 			throw IndexOutOfBoundsException("Index out of bounds in operator()", row, column);
 		return ptr[row][column];
 	}
-	friend ostream& operator<<(ostream& s, BaseMatrix M);
-	friend istream& operator>>(istream& s, BaseMatrix& M);
+	template <class T1>
+	friend ostream& operator<<(ostream& s, BaseMatrix<T1> M);
+	template <class T2>
+	friend istream& operator>>(istream& s, BaseMatrix<T2>& M);
 };
 
-ostream& operator<<(ostream& s, BaseMatrix M)
+template <class T1 = double>
+ostream& operator<<(ostream& s, BaseMatrix<T1> M)
 {
 	if (typeid(s) == typeid(ofstream))
 	{
@@ -203,6 +203,7 @@ ostream& operator<<(ostream& s, BaseMatrix M)
 		for (int i = 0; i < M.height; i++)
 			for (int j = 0; j < M.width; j++)
 				s << M.ptr[i][j] << " ";
+		s << "\n";
 	}
 	else
 	{
@@ -216,7 +217,8 @@ ostream& operator<<(ostream& s, BaseMatrix M)
 	return s;
 }
 
-istream& operator>>(istream& s, BaseMatrix& M)
+template <class T2 = double>
+istream& operator>>(istream& s, BaseMatrix<T2>& M)
 {
 	if (typeid(s) == typeid(ifstream))
 	{
@@ -230,24 +232,33 @@ istream& operator>>(istream& s, BaseMatrix& M)
 	return s;
 }
 
-class Matrix : public BaseMatrix
+template <class T = double>
+class Matrix : public BaseMatrix<T>
 {
 public:
-	Matrix(int Height = 2, int Width = 2) : BaseMatrix(Height, Width) {}
-	Matrix(double** arr, int w, int h) : BaseMatrix(arr, w, h) {}
-	Matrix(const Matrix& M) : BaseMatrix((BaseMatrix&)M) { cout << "\nMatrix copy constructor\n"; }
+	Matrix<T>(int Height = 2, int Width = 2) : BaseMatrix<T>(Height, Width) {}
+	Matrix<T>(T** arr, int w, int h) : BaseMatrix<T>(arr, w, h) {}
+	Matrix<T>(const Matrix<T>& M) : BaseMatrix<T>((BaseMatrix<T>&)M) { cout << "\nMatrix copy constructor\n"; }
 
-	double operator+()
+	using BaseMatrix<T>::ptr;
+	using BaseMatrix<T>::height;
+	using BaseMatrix<T>::width;
+ 
+	T operator+()
 	{
+		if (typeid(T) != typeid(int) || typeid(T) != typeid(double))
+			throw InvalidOperationException("operator+() can operate only with ints or doubles", width, height);
 		if (width != height)
-			throw InvalidSizeException("Quantity of rows and columns isn't equal in operator+()", width, height);
-		double sum = 0;
+			throw WrongSizeException("Quantity of rows and columns isn't equal in operator+()", width, height);
+		T sum = 0;
 		for (int i = 0; i < height; i++)
 			sum += ptr[i][i];
 		return sum;
 	}
-	Matrix operator*(double d)
+	Matrix operator*(T d)
 	{
+		if (typeid(T) != typeid(int) || typeid(T) != typeid(double))
+			throw InvalidOperationException("operator*() can operate only with ints or doubles", width, height);
 		Matrix s(height, width);
 		for (int i = 0; i < height; i++)
 			for (int j = 0; j < width; j++)
@@ -258,19 +269,6 @@ public:
 
 	Matrix operator=(Matrix m)
 	{
-		if (ptr == NULL)
-		{
-			ptr = new double* [m.height];
-			for (int i = 0; i < m.height; i++)
-			{
-				ptr[i] = new double[m.width];
-				for (int j = 0; j < m.width; j++)
-					ptr[i][j] = m.ptr[i][j];
-			}
-			width = m.width;
-			height = m.height;
-			return *this;
-		}
 		if (height != m.height || width != m.width)
 		{
 			for (int i = 0; i < height; i++)
@@ -278,12 +276,12 @@ public:
 			if (height != m.height)
 			{
 				delete[] ptr;
-				ptr = new double* [m.height];
+				ptr = new T* [m.height];
 			}
 			for (int i = 0; i < m.height; i++)
 			{
-				ptr[i] = new double[m.width];
-				for (int j = 0; j < width; j++)
+				ptr[i] = new T[m.width];
+				for (int j = 0; j < m.width; j++)
 					ptr[i][j] = m.ptr[i][j];
 			}
 			width = m.width;
@@ -300,37 +298,20 @@ public:
 
 	Matrix DeleteMostlyEmptyLines()
 	{
-		/*Matrix result(height, width);
-		int k = 0;
-		for (int i = 0; i < height; i++)
-			for (int j = 0; j < width; j++)
-				result.ptr[i][j] = 0;
-		for (int i = 0; i < height; i++)
-		{
-			int a = 0;
-			double* p = ptr[i];
-			for (int j = 0; j < width; j++)
-			{
-				*p == 0 ? a -= 1 : a += 1;
-				p++;
-			}
-			if (a >= 0)
-			{
-				for (int j = 0; j < width; j++)
-					result.ptr[k][j] = ptr[i][j];
-				k += 1;
-			}
-		}
-		return result;*/
-		double* IndexsOfNotEmptLines = new double[height];
+		T empty;
+		if (typeid(T) == typeid(int) || typeid(T) == typeid(double))
+			empty = 0;
+		if (typeid(T) == typeid(char))
+			empty = ' ';
+		T* IndexsOfNotEmptLines = new T[height];
 		int k = 0;
 		for (int i = 0; i < height; i++)
 		{
 			int a = 0;
-			double* p = ptr[i];
+			T* p = ptr[i];
 			for (int j = 0; j < width; j++)
 			{
-				*p == 0 ? a -= 1 : a += 1;
+				*p == empty ? a -= 1 : a += 1;
 				p++;
 			}
 			if (a >= 0)
@@ -339,10 +320,13 @@ public:
 				k += 1;
 			}
 		}
+		if (k <= 0)
+			throw InvalidVarFunctionException("Most lines are empty in functions DeleteMostlyEmptyLines operand", k, width);
 		Matrix result(k, width);
 		k = 0;
 		for (int i = 0; i < height; i++)
-		{;
+		{
+			;
 			if (i == IndexsOfNotEmptLines[k])
 			{
 				for (int j = 0; j < width; j++)
@@ -358,71 +342,61 @@ int main()
 {
 	try
 	{
-		Matrix a(3, 3);
-		a(0, 0) = 0; a(0, 1) = 2; a(0, 2) = 15;
-		a(1, 0) = 0; a(1, 1) = 0; a(1, 2) = 54;
-		a(2, 0) = 12; a(2, 1) = 90; a(2, 2) = 1;
-		Matrix b(1, 4);
-		Matrix c(2,2);
-		c = a;
-		//b = a.DeleteMostlyEmptyLines();
-		//b.print();
-		//Matrix* prr = new Matrix[2];
-		//prr[0] = a;
-		//prr[1] = b;
-		//a.print();
-		//prr[0].print();
-		//b.print();
-		//a.DeleteMostlyEmptyLines();
-		/*Matrix* arr = new Matrix[10];
-		for (int i = 0; i < 10; i++)
+		cout << "Amount of Matrices:";
+		int n = 0;
+		cin >> n;
+		if (n <= 0)
+			return 0;
+		Matrix<>* m = new Matrix<>[n];
+		int* mDims = new int[2 * n];
+		for (int i = 0; i < n; i++)
 		{
-			arr[i](0, 0) = i;
-			arr[i](0, 1) = i+1;
-			arr[i](1, 0) = i-1;
-			arr[i](1, 1) = i*2;
+			int w = 0;
+			int h = 0;
+			cin >> h >> w;
+			mDims[2 * i] = h;
+			mDims[2 * i + 1] = w;
+			Matrix<> M(h, w);
+			cin >> M;
+			m[i] = M;
 		}
-		//M1(0, 0) = 1; M1(0, 1) = 2; M1(1, 0) = 3; M1(1, 1) = 4; M1(1, 5) = 5;
-		//Matrix M2 = M1;
-		//cin >> M1;
-		//cout << "\n";
-		//cout << +(M2 * 5);
-		//cout << "\n"<< M1;
-		//M2.print();
-
-		ofstream fout("test.txt");
+		ofstream fout("Matrices.txt");
 		if (fout)
 		{
-			for (int i = 0; i < 10; i++)
-				fout << arr[i] << "\n";
+			for (int i = 0; i < n; i++)
+				fout << m[i];
 			fout.close();
 		}
-		ifstream fin("test.txt");
-		if (fin)
+		Matrix<>* m2 = new Matrix<>[n];
+		ifstream fin("Matrices.txt");
+		if (fin.is_open())
 		{
-			// int n; fin >> n;
-			//for (int i = 0; i < n; i++)
-			while (!fin.eof())
+			for (int i = 0; i < n; i++)
 			{
-				try
-				{
-					Matrix M2;
-					fin >> M2;
-					cout << "\n" << M2;
-				}
-				catch (exception e) { cout << "\nCaught exception: " << e.what(); }
+				Matrix<> M(mDims[i * 2], mDims[i * 2 + 1]);
+				fin >> M;
+				m2[i] = M;
 			}
 			fin.close();
-		}*/
+		}
+		for (int i = 0; i < n; i++)
+		{
+			cout << "\n" << m[i];
+			cout << "\n" << m2[i];
+		}
+
+
+		Matrix<> M1(3, 3);
+		Matrix<> M2(1, 2);
+		cin >> M1;
+		M2 = M1.DeleteMostlyEmptyLines();
+		cout << M2;
+
 	}
 
 	catch (WrongSizeException e)
 	{
 		cout << "\nCaught WrongSizeException: "; e.print();
-	}
-	catch (InvalidSizeException e)
-	{
-		cout << "\nCaught InvalidSizeException: "; e.print();
 	}
 	catch (IndexOutOfBoundsException e)
 	{
@@ -432,6 +406,10 @@ int main()
 	{
 		cout << "\nCaught InvalidOperationException: "; e.print();
 	}
+	catch (InvalidVarFunctionException e)
+	{
+		cout << "\nCaught InvalidVarFunctionException: "; e.print();
+	}
 	catch (Exception e)
 	{
 		cout << "\nCaught Exception: "; e.print();
@@ -440,8 +418,5 @@ int main()
 	{
 		cout << "\nCaught Exception: "; cout << e.what();
 	}
-	char c; cin >> c;
-
 	return 0;
 }
-	
