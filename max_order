@@ -1,0 +1,255 @@
+﻿#include<cmath>
+#include<iostream>
+#include <vector>
+using namespace std;
+
+
+
+long modul(long a,long mod) // поиск числа а по модулю mod 
+{
+	if (a < 0)
+	{
+		a = a + mod + (mod * (abs(a) / mod));
+		return a;
+	}
+	if (a > mod)
+		a = a - (mod * (a / mod));
+	return a;
+}
+
+long pow(long x, int y, long N) // возведение числа а в степень power по модулю mod
+{
+	if (y == 0) return 1;
+	long z = pow(x, y / 2, N);
+	if (y % 2 == 0)
+		return (z * z) % N;
+	else
+		return (x * z * z) % N;
+}
+
+long gcd(long a, long b, long& x, long& y) // расширеный алгоритм евклида
+{
+	if (a == 0)
+	{
+		x = 0; y = 1;
+		return b;
+	}
+	long x1, y1;
+	long d = gcd(b % a, a, x1, y1);
+	x = y1 - (b / a) * x1;
+	y = x1;
+	return d;
+}
+
+long gcd(long a, long b) //алгоритм евклида НОД
+{
+	return b ? gcd(b, a % b) : a;
+}
+
+long lmc(long a, long b) // НОК
+{
+	return a * b / gcd(a, b);
+}
+
+
+long phi(long n) // функция эйлера
+{
+	long result = n;
+	for (int i = 2; i * i <= n; ++i)
+		if (n % i == 0) {
+			while (n % i == 0)
+				n /= i;
+			result -= result / i;
+		}
+	if (n > 1)
+		result -= result / n;
+	return result;
+}
+
+
+vector <long> primedenoms(long n) // разбиение числа на простые множители
+{
+	int j = 2;
+	int k = 0;
+	vector <long> res;
+	while ((long long)j * j <= n)
+	{
+		if (n % j == 0)
+		{
+			if (k == 0 || res[k-1] % j != 0)
+			{
+				res.push_back(j);
+				k++;
+			}
+			else
+			{
+				long a = res[k - 1];
+				res[k - 1] = a * j;
+			}
+			n /= j;
+			j = 2;
+		}
+		else ++j;
+	}
+	if (k == 0 || res[k - 1] % n != 0)
+		res.push_back(n);
+	else
+	{
+		long a = res[k - 1];
+		res[k - 1] = a * n;
+	}
+	return res;
+}
+
+/*long denom(long a)
+{
+	if (a == 2)
+		return -1;
+	for (int i = 2; i * i <= a; i++)
+	{
+		if (a % i == 0)
+			return i;
+	}
+	return -1;
+}*/
+
+vector <long> max_order(long mod)
+{
+	if (mod == 2)
+	{
+		vector <long> res(2);
+		res[0] = 1;
+		res[1] = 1;
+		cout << "Element of max order in Z2 : 1  ord(1) = 1" << "\n";
+		return res;
+	}
+	long ord = phi(mod);
+	if (mod > 6000011)
+	{
+		cout << "Max possible order in Z" << mod << " is " << ord << "\n";
+		vector<long> result(2);
+		result[0] = ord;
+		result[1] = -1;
+		return result;
+	}
+	vector <long> result(2);
+	vector <long> multgroup(ord);
+	for (long i = 1, n = 0; i < mod; i++)
+	{
+		if (gcd(mod, i) == 1)
+		{
+			multgroup[n] = i;
+			n++;
+		}
+	}
+	vector <long> pows;
+	for (int i = 2; i * i <= ord; i++)
+	{
+		if (ord % i == 0)
+		{
+			pows.push_back(i);
+			if (i * i != ord)
+				pows.push_back(ord/i);
+		}
+	}
+	vector <long> pows_sorted(pows.size());
+	for (int i = 0; i < pows.size(); i+=2)
+	{
+		pows_sorted[i/2] = pows[i];
+	}
+	for (int i = 1; i < pows.size(); i += 2)
+	{
+		pows_sorted[pows.size()-(i+1)/2] = pows[i];
+	}
+	pows.clear();
+	pows_sorted.push_back(ord);
+	long max = 0;
+	long max_el = 0;
+	for (int i = 1; i < multgroup.size(); i++)
+	{
+		for (int j = 0; j < pows_sorted.size(); j++)
+		{
+			if (pow(multgroup[i], pows_sorted[j], mod) == 1)
+			{
+				if (max < pows_sorted[j])
+				{
+					max = pows_sorted[j];
+					max_el = multgroup[i];
+				}
+				break;
+			}
+		}
+		if (max == ord)
+		{
+			cout << "Element of max order in Z" << mod << " : " << max_el << "  ord(" << max_el << ") = " << max << "\n";
+			result[0] = max;
+			result[1] = max_el;
+			return result;
+		}
+	}
+	cout << "Element of max order in Z" << mod << " : " << max_el << "  ord(" << max_el << ") = " << max << "\n";
+	result[0] = max;
+	result[1] = max_el;
+	return result;
+}
+
+void max_order1(long mod)
+{
+	vector <long> a = primedenoms(mod);
+	if (a.size() == 1)
+	{
+		max_order(a[0]);
+		return;
+	}
+	vector<long> max(a.size());
+	vector <long> max_el(a.size());
+	for (int i = 0; i < a.size(); i++)
+	{
+		vector<long> b = max_order(a[i]);
+		max[i] = b[0];
+		max_el[i] = b[1];
+	}
+	long ord = lmc(max[0],max[1]);
+	for (int i = 2; i < a.size(); i++)
+		ord = lmc(max[i], ord);
+	cout << "Max possible order in Z" << mod << " : " << ord << "\n";
+	for (int i = 0; i < a.size(); i++)
+		if (max_el[i] == -1)
+			return;
+	vector<long> e(a.size());
+	for (int i = 0; i < a.size(); i++)
+	{
+		long b = 1;
+		for (int j = 0; j < a.size(); j++)
+			if (i != j)
+				b *= a[j];
+		long x, y;
+		gcd(a[i], b,x,y);
+		e[i] = modul(b*y,mod);
+	}
+	long el_max_ord = 0;
+	for (int i = 0; i < a.size(); i++)
+	{
+		el_max_ord += max_el[i] * e[i];
+	}
+	cout << "Element of max order in Z" << mod << " : " << modul(el_max_ord,mod) << "\n";
+}
+
+int main()
+{
+	max_order1(162000297);
+	/*cout << "\n";
+	max_order1(800);
+	cout << "\n";
+	max_order1(55450);
+	cout << "\n";
+	max_order1(2383254);
+	cout << "\n";
+	max_order1(316030564);
+	cout << "\n";
+	max_order1(730887505);
+	cout << "\n";
+	max_order1(1847653789);
+	cout << "\n";
+	max_order1(1478783811);*/
+}
